@@ -42,7 +42,7 @@ void uart_init(void){
 
   put32(AUX_ENABLES,1);
   put32(AUX_MU_CNTL_REG,0);
-  put32(AUX_MU_IER_REG,0);
+  put32(AUX_MU_IER_REG,1);
   put32(AUX_MU_LCR_REG, 3);
   put32(AUX_MU_MCR_REG, 0);
   put32(AUX_MU_BAUD_REG, 270);

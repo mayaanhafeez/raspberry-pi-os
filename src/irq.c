@@ -1,4 +1,5 @@
 #include"utils.h"
+#include "mini_uart.h"
 #include "printf.h"
 #include "timer.h"
 #include "entry.h"
@@ -28,7 +29,7 @@ const char *entry_error_messages[] = {
 
 
 void enable_interrupt_controller() {
-  put32(ENABLE_IRQS_1, SYSTEM_TIMER_IRQ_1);
+  put32(ENABLE_IRQS_1, 1 << 29);
 }
 
 void show_invalid_entry_message(int type, unsigned long esr, unsigned long address) { 
@@ -40,6 +41,9 @@ void handle_irq(void) {
   switch (irq){
     case (SYSTEM_TIMER_IRQ_1):
       handle_timer_irq();
+      break;
+    case (1<<29):
+      uart_send(uart_recv()); 
       break;
     default:
       printf("Unknown pending irq: %x\r\n", irq);
