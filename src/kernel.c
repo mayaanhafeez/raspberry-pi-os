@@ -1,22 +1,43 @@
-#include "mini_uart.h" 
-#include "utils.h"
+#include "irq.h"
+#include "mini_uart.h"
 #include "printf.h"
 #include "timer.h"
-#include "irq.h"
+#include "utils.h"
+#include "sched.h"
+#include "fork.h"
 
-void kernel_main(void){
+void process(char* array) {
+  while (1){
+    for(int i=0;i<5;i++){
+      uart_send(array[i]);
+      delay(100000);
+    }
+  }
+}
+
+void kernel_main(void) {
+  current->priority=1;
   uart_init();
   init_printf(0, putc);
-  printf("irq vector init\n");
   irq_vector_init();
-  printf("timer init\n");
   timer_init();
   enable_interrupt_controller();
-  printf("enable_irq\n");
   enable_irq();
-  int el= get_el();
-  printf("Exception Level: %d \r\n",el);
+  int el = get_el();
+  printf("Exception Level: %d \r\n", el);
+  printf("current addr = %x, init priority = %d\r\n", current, current->priority);
+  int res = copy_process((unsigned long)&process, (unsigned long)"12345");
+  if (res !=0){
+    printf("error while starting process 1");
+    return;
+  }
+  res = copy_process((unsigned long)&process, (unsigned long)"abcde");
+  if (res !=0){
+    printf("error while starting process 2");
+    return;
+  }
 
-  while (1){
-    }
+  while (1) {
+    schedule();
+  }
 }
