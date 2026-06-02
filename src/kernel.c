@@ -10,7 +10,7 @@ void process(char* array) {
   while (1){
     for(int i=0;i<5;i++){
       uart_send(array[i]);
-      delay(100000);
+      delay(1000);
     }
   }
 }
@@ -31,11 +31,18 @@ void kernel_main(void) {
     printf("error while starting process 1");
     return;
   }
-  res = copy_process((unsigned long)&process, (unsigned long)"abcde");
-  if (res !=0){
-    printf("error while starting process 2");
-    return;
+  int i = 0;
+  while (1){
+    res = copy_process((unsigned long)&process, (unsigned long)"abcde");
+    printf("copying task %d, res %d \n",i, res);
+    if (res !=0){
+      printf("error while starting process 2");
+      return;
+    }
+    schedule();
+    i++;
   }
+  
 
   while (1) {
     schedule();
