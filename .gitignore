@@ -5,3 +5,4 @@ src/*/build
 **/*.swp
 **/*.img
 **/*.elf
+compile_commands.json
