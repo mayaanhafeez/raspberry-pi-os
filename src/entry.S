@@ -1,4 +1,6 @@
 #include "entry.h"
+#include "arm/sysregs.h"
+#include "sys.h"
 
 	.macro handle_invalid_entry type
 	kernel_entry
@@ -31,7 +33,7 @@
 	stp	x24, x25, [sp, #16 * 12]
 	stp	x26, x27, [sp, #16 * 13]
 	stp	x28, x29, [sp, #16 * 14]
-	str	x30, [sp, #16 * 15] 
+	str	x30, [sp, #16 * 15]
 
   mrs x22, elr_el1
   mrs x23, spsr_el1
@@ -61,8 +63,8 @@
 	ldp	x24, x25, [sp, #16 * 12]
 	ldp	x26, x27, [sp, #16 * 13]
 	ldp	x28, x29, [sp, #16 * 14]
-	ldr	x30, [sp, #16 * 15] 
-	add	sp, sp, #S_FRAME_SIZE		
+	ldr	x30, [sp, #16 * 15]
+	add	sp, sp, #S_FRAME_SIZE
 	eret
 	.endm
 
@@ -71,7 +73,7 @@
  * Exception vectors.
  */
 .align	11
-.globl vectors 
+.globl vectors
 vectors:
 	ventry	sync_invalid_el1t			// Synchronous EL1t
 	ventry	irq_invalid_el1t			// IRQ EL1t
@@ -83,8 +85,8 @@ vectors:
 	ventry	fiq_invalid_el1h			// FIQ EL1h
 	ventry	error_invalid_el1h			// Error EL1h
 
-	ventry	sync_invalid_el0_64			// Synchronous 64-bit EL0
-	ventry	irq_invalid_el0_64			// IRQ 64-bit EL0
+  ventry el0_sync // Synchronous 64 bit EL0
+  ventry el0_irq // IRQ 64 bit EL0
 	ventry	fiq_invalid_el0_64			// FIQ 64-bit EL0
 	ventry	error_invalid_el0_64			// Error 64-bit EL0
 
@@ -139,15 +141,55 @@ error_invalid_el0_32:
 	handle_invalid_entry  ERROR_INVALID_EL0_32
 
 el1_irq:
-	kernel_entry 
+	kernel_entry 1
 	bl	handle_irq
-	kernel_exit 
+	kernel_exit 1
+
+el0_irq:
+  kernel_entry 0
+  bl handle_irq
+  kernel_exit 0
+
+el0_sync:
+  kernel_entry 0
+  mrs x25, esr_el1
+  lsr x24, x25, #ESR_ELx_EC_SHIFT
+  cmp x24, #ESR_ELx_EC_SVC64
+  b.eq el0_svc
+  handle_invalid_entry 0, SYNC_ERROR
+
+sc_nr . req x25
+scno .req x26
+stbl .req x27
+
+el0_svc:
+  adr stbl, sys_call_table
+  uxtw scno, w8
+  mov sc_nr, #__NR_syscalls
+  bl enable_irq
+  cmp scno, sc_nr
+  b.hs ni_sys
+
+  ldr x16, [stbl, scno, lsl #3]
+  blr x16
+  b ret_from_syscall
+
+ni_sys:
+  handle_invalid_entry 0, SYSCALL_ERROR
+
+ret_from_syscall:
+  bl disable_irq
+  str x0, [sp, #S_X0]
+  kernel_exit 0
 
 .globl ret_from_fork
 ret_from_fork:
   bl schedule_tail
   mov x0, x20
   blr x19
+ret_to_user:
+  bl disable_irq
+  kernel_exit 0
 
 .globl err_hang
 err_hang: b err_hang
