@@ -2,8 +2,8 @@
 #include "arm/sysregs.h"
 #include "sys.h"
 
-	.macro handle_invalid_entry type
-	kernel_entry
+	.macro handle_invalid_entry el, type
+	kernel_entry \el
 	mov	x0, #\type
 	mrs	x1, esr_el1
 	mrs	x2, elr_el1
@@ -16,7 +16,7 @@
 	b	\label
 	.endm
 
-	.macro	kernel_entry
+	.macro	kernel_entry, el
 	sub	sp, sp, #S_FRAME_SIZE
 	stp	x0, x1, [sp, #16 * 0]
 	stp	x2, x3, [sp, #16 * 1]
@@ -35,16 +35,25 @@
 	stp	x28, x29, [sp, #16 * 14]
 	str	x30, [sp, #16 * 15]
 
+  if \el == 0
+  mrs x21, sp_el0
+  .else
+  add x21, sp, #S_FRAME_SIZE
+  .endif /* \el == 0 */
+
   mrs x22, elr_el1
   mrs x23, spsr_el1
-
   stp x30, x22, [sp, #16 *15]
   str x23, [sp, #16 *16]
 	.endm
 
-	.macro	kernel_exit
+	.macro	kernel_exit, el
   ldr x23, [sp, #16 * 16]
   ldp x30, x22, [sp, #16 *15]
+  .if \el == 0
+  msr sp_el0, x21
+  .endif /* \el == 0 */
+
   msr elr_el1, x22
   msr spsr_el1, x23
 
