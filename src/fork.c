@@ -7,7 +7,8 @@
 
 int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg, unsigned long stack) {
   preempt_disable();
-  struct task_struct *p = (struct task_struct *)get_free_page();
+  struct task_struct *p;
+  p = (struct task_struct *) get_free_page();
   if (!p) {return -1;};
 
   struct pt_regs *childregs = task_pt_regs(p);
@@ -31,7 +32,7 @@ int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg,
   p->counter = current->priority;
   p->preempt_count = 1;
 
-  p->cpu_context.pc = (unsigned long)ret_from_fork();
+  p->cpu_context.pc = (unsigned long)ret_from_fork;
   p->cpu_context.sp = (unsigned long)childregs;
   int pid = nr_tasks++;
   task[pid] = p;
@@ -45,9 +46,10 @@ int move_to_user_mode(unsigned long pc) {
   regs->pc = pc;
   regs->pstate = PSR_MODE_EL0t;
   unsigned long stack = get_free_page();
-  if (!stack) {return -1};
+  if (!stack) {return -1;}
   regs->sp = stack + PAGE_SIZE;
   current->stack = stack;
+  printf("regs->pc=%x regs->sp=%x\r\n", regs->pc, regs->sp);
   return 0;
 }
 

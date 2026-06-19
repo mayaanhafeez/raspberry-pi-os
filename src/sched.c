@@ -1,10 +1,13 @@
 #include "sched.h"
 #include "irq.h"
 #include "printf.h"
+#include "fork.h"
+#include "utils.h"
+#include "mm.h"
 
 static struct task_struct init_task = INIT_TASK;
 struct task_struct *current = &(init_task);
-struct task_struct * task_list = &(init_task);
+struct task_struct *task[NR_TASKS] = {&(init_task),};
 int nr_tasks=1;
 
 void preempt_disable(void){
@@ -16,30 +19,29 @@ void preempt_enable(void){
 }
 
 void _schedule(void){
-  preempt_disable();
-  struct task_struct *next_task = task_list;
-  int c;
+  int next, c;
   struct task_struct * p;
   while (1) {
-    c=-1;
-    p= task_list;
-    while (p) {
-      if (p->state == TASK_RUNNING && p->counter >c) {
-        c=p->counter;
-        next_task=p;
+    c = -1;
+    next = 0;
+    for (int i = 0; i < NR_TASKS; i++){
+      p = task[i];
+      if (p && p->state == TASK_RUNNING && p->counter > c) {
+        c = p->counter;
+        next = i;
       }
-      p=p->next;
     }
     if (c) {
       break;
     }
-    p=task_list;
-    while (p) {
-      p->counter = (p->counter >>1 ) + p->priority;
-      p=p->next;
+    for (int i = 0; i <NR_TASKS; i++){
+      p = task[i];
+      if (p) {
+        p->counter = (p->counter >> 1) + p->priority;
+      }
     }
   }
-  switch_to(next_task);
+  switch_to(task[next], next);
   preempt_enable();
 }
 
@@ -48,7 +50,7 @@ void schedule(void){
   _schedule();
 }
 
-void switch_to(struct task_struct * next){
+void switch_to(struct task_struct * next, int index){
   if (current==next)
     return;
   struct task_struct * prev = current;
@@ -69,4 +71,19 @@ void timer_tick(){
   enable_irq();
   _schedule();
   disable_irq();
+}
+
+void exit_process() {
+  preempt_disable();
+  for (int i=0; i<NR_TASKS;i++){
+    if (task[i] == current){
+      task[i]->state = TASK_ZOMBIE;
+      break;
+    }
+  }
+  if (current->stack) {
+    free_page(current->stack);
+  }
+  preempt_enable();
+  schedule();
 }

@@ -12,6 +12,12 @@ unsigned long get_free_page(){
   return 0;
 }
 
+void *memset(void *s, int c, unsigned long n) {
+    unsigned char *p = s;
+    while (n--) *p++ = (unsigned char)c;
+    return s;
+}
+
 void free_page(unsigned long p){
   mem_map[(p - LOW_MEMORY) / PAGE_SIZE] =0;
 }
