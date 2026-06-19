@@ -5,7 +5,7 @@
 
 .globl _start
 _start:
-  mrs x0, mpidr_el1 
+  mrs x0, mpidr_el1
   and x0, x0, #0xFF
   cbz x0, master
   b proc_hang
@@ -25,7 +25,7 @@ master:
 
   adr x0,el1_entry
   msr elr_el2, x0
-  
+
   eret
 
 el1_entry:
