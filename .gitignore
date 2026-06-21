@@ -1,8 +1,16 @@
-backup/*
+# Build output
+build/
 src/*/build
+backup/*
 **/*.o
 **/*.d
-**/*.swp
 **/*.img
 **/*.elf
+
+# Editor / tooling
+**/*.swp
+.cache/
 compile_commands.json
+
+# OS metadata
+.DS_Store
