@@ -38,5 +38,27 @@ el1_entry:
   bl kernel_main
   b proc_hang
 
+__create_page_tables:
+  mov x29, x30 #save ret address
 
+  adrp x0, pg_dir
+  mov x1, #PG_DIR_SIZE
+  bl memzero
+
+  adrp  x0, pg_dir
+  mov x1, #VA_START
+  create_pgd_entry x0, x1, x2, x3
+
+  mov x1, xzr
+  mov x2, #VA_START
+  ldr x3, =(VA_START + DEVICE_BASE - SECTION_SIZE)
+  create_block_map x0, x1, x2, x3, MMU_FLAGS, x4
+
+  mov x1, #DEVICE_BASE
+  ldr x2, (VA_START + DEVICE_BASE)
+  ldr x3, (VA_START + DEVICE_BASE - SECTION_SIZE)
+  create_block_map x0, x1, x2, x3, MMU_FLAGS, x4
+
+  mov x30, x29
+  ret
 
