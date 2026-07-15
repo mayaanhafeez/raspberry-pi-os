@@ -38,6 +38,35 @@ el1_entry:
   bl kernel_main
   b proc_hang
 
+.macro create_pdg_entry tbt, virt, tmp1, tmp2
+create_table_entry \tbl, \virt, PGD_SHIFT, \tmp1, tmp2
+create_table_entry \tbl, \virt, PUD_SHIFT, \tmp1, tmp2
+.endm
+
+.macro create_table_entry tbl, virt, shift, tmp1, tmp2
+lsr \tmp1, \virt, #\shift
+and \tmp1, \tmp2, #PTRS_PER_PAGE -1
+add \tmp2, \tbl, #PAGE_SIZE
+orr \tmp2, tmp2, #MM_TYPE_PAGE_TABLE
+str \tmp2, [\tbl, \tmp1, lsl #3]
+add \tbl, \tbl, #PAGE_SIZE
+.endm
+
+.macro create_block_map tbl, phys, start, end, flags, tmp1
+lsr \start, \start, #SECTION_SHIFT
+and \start, \start, #PTRS_PER_TABLE -1
+lsr \end, \end, #SECTION_SHIFT
+and \end, \end, #PTRS_PER_TABLE -1
+lsr \phys, \phys, #SECTION_SHIFT
+mov \tmp1, #\flags
+orr \phys, \tmp1, \phys, lsl #SECTION_SHIFT
+9999: str \phys, [\tbl, \start, lsl #3]
+add \start, \start, #1
+add \phys, \phys, #SECTION_SIZE
+cmp \start, \end
+b.ls 9999b
+.endm
+
 __create_page_tables:
   mov x29, x30 #save ret address
 
@@ -61,4 +90,3 @@ __create_page_tables:
 
   mov x30, x29
   ret
-
