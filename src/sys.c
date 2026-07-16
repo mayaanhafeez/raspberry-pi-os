@@ -7,7 +7,7 @@
 
 void sys_write(char *buf) { printf(buf); }
 
-int sys_clone(unsigned long stack) { return copy_process(0, 0, 0, stack); }
+int sys_clone(unsigned long stack) { return copy_process(0, 0, 0); }
 
 unsigned long sys_malloc() {
   unsigned long addr = get_free_page();

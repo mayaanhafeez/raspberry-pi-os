@@ -33,6 +33,14 @@ unsigned long map_table(unsigned long *table, unsigned long shift, unsigned long
   return table[index] & PAGE_MASK;
 }
 
+unsigned long allocate_kernel_page() {
+	unsigned long page = get_free_page();
+	if (page == 0) {
+		return 0;
+	}
+	return page + VA_START;
+}
+
 void map_page(struct task_struct *task, unsigned long va, unsigned long page){
   unsigned long pgd;
   if (!task->mm.pgd){
@@ -43,9 +51,9 @@ void map_page(struct task_struct *task, unsigned long va, unsigned long page){
   int new_table;
   unsigned long pud = map_table((unsigned long*)(pgd +VA_START), PGD_SHIFT, va,&new_table);
   if (new_table){task->mm.kernel_pages[++task->mm.kernel_pages_count]=pud;}
-  unsigned long pmd = map_table((unsigned long*)(pgd +VA_START), PUD_SHIFT, va,&new_table);
+  unsigned long pmd = map_table((unsigned long*)(pud +VA_START), PUD_SHIFT, va,&new_table);
   if (new_table){task->mm.kernel_pages[++task->mm.kernel_pages_count]=pmd;}
-  unsigned long pte = map_table((unsigned long*)(pgd +VA_START), PMD_SHIFT, va,&new_table);
+  unsigned long pte = map_table((unsigned long*)(pmd +VA_START), PMD_SHIFT, va,&new_table);
   if (new_table){task->mm.kernel_pages[++task->mm.kernel_pages_count]=pte;}
   map_table_entry((unsigned long *)(pte + VA_START), va, page);
   struct user_page p = {page, va};
@@ -82,7 +90,7 @@ void *memset(void *s, int c, unsigned long n) {
 
 int do_mem_abort(unsigned long addr, unsigned long esr){
   unsigned long dfs = (esr & 0b111111);
-  if ((dfs & 0b111111) == 0b100) {
+  if ((dfs & 0b111100) == 0b100) {
     unsigned long page = get_free_page();
     if (page == 0){return -1;}
     map_page(current, addr & PAGE_MASK, page);

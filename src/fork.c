@@ -4,7 +4,7 @@
 #include "utils.h"
 #include "entry.h"
 
-int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg, unsigned long stack) {
+int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg) {
   preempt_disable();
   struct task_struct *p;
   unsigned long page = allocate_kernel_page();

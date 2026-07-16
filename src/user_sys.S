@@ -1,8 +1,8 @@
 .section ".text.user"
 
 .set SYS_WRITE_NUMBER, 0
-.set SYS_FORK_NUMBER, 1
-.set SYS_EXIT_NUMBER, 2
+.set SYS_FORK_NUMBER, 2
+.set SYS_EXIT_NUMBER, 3
 
 .globl user_delay
 user_delay:
