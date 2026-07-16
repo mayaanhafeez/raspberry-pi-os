@@ -160,11 +160,25 @@ el0_sync:
 	lsr	x24, x25, #ESR_ELx_EC_SHIFT		// exception class
 	cmp	x24, #ESR_ELx_EC_SVC64			// SVC in 64-bit state
 	b.eq	el0_svc
+  cmp x24, #ESR_ELx_EC_EC_DABT_LOW
+  b.eq el0_da
 	handle_invalid_entry 0, SYNC_ERROR
 
 sc_nr	.req	x25					// number of system calls
 scno	.req	x26					// syscall number
 stbl	.req	x27					// syscall table pointer
+
+el0_da:
+bl    enable_irq
+  mrs    x0, far_el1
+  mrs    x1, esr_el1
+  bl    do_mem_abort
+  cmp x0, 0
+  b.eq 1f
+  handle_invalid_entry 0, DATA_ABORT_ERROR
+1:
+  bl disable_irq
+  kernel_exit 0
 
 el0_svc:
 	adr	stbl, sys_call_table			// load syscall table pointer

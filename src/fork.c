@@ -1,19 +1,17 @@
-#include "entry.h"
 #include "mm.h"
-#include "printf.h"
 #include "sched.h"
-#include "utils.h"
 #include "fork.h"
+#include "utils.h"
+#include "entry.h"
 
 int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg, unsigned long stack) {
   preempt_disable();
   struct task_struct *p;
-  p = (struct task_struct *) get_free_page();
-  if (!p) {return -1;};
+  unsigned long page = allocate_kernel_page();
+  p = (struct task_struct *) page;
 
   struct pt_regs *childregs = task_pt_regs(p);
-  memzero((unsigned long)childregs, sizeof(struct pt_regs));
-  memzero((unsigned long)&p->cpu_context, sizeof(struct cpu_context));
+  if (!p) {return -1;};
 
   if (clone_flags & PF_KTHREAD) {
     p->cpu_context.x19 = fn;
@@ -22,8 +20,7 @@ int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg,
     struct pt_regs * cur_regs = task_pt_regs(current);
     *childregs = *cur_regs;
     childregs->regs[0] = 0;
-    childregs->sp = stack + PAGE_SIZE;
-    p->stack = stack;
+    copy_virt_memory(p);
   }
 
   p->flags = clone_flags;

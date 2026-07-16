@@ -1,11 +1,14 @@
-#include "irq.h"
-#include "mini_uart.h"
+#include <stddef.h>
+#include <stdint.h>
 #include "printf.h"
-#include "timer.h"
 #include "utils.h"
-#include "sched.h"
+#include "timer.h"
+#include "irq.h"
 #include "fork.h"
+#include "sched.h"
+#include "mini_uart.h"
 #include "sys.h"
+#include "user.h"
 
 
 void user_process1(char* array) {
@@ -55,7 +58,6 @@ void kernel_process(){
   unsigned long end = (unsigned long)&user_end;
   unsigned long process = (unsigned long)&user_process;
   int err = move_to_user_mode(begin, end-begin, process-begin);
-  int err = move_to_user_mode((unsigned long)&user_process);
   if (err<0){
     printf("Error while moving to user mode\n\r");
   }
