@@ -51,6 +51,10 @@ void user_process() {
 
 void kernel_process(){
   printf("Kernel proess started. EL %d\r\n",get_el());
+  unsigned long begin = (unsigned long)&user_begin;
+  unsigned long end = (unsigned long)&user_end;
+  unsigned long process = (unsigned long)&user_process;
+  int err = move_to_user_mode(begin, end-begin, process-begin);
   int err = move_to_user_mode((unsigned long)&user_process);
   if (err<0){
     printf("Error while moving to user mode\n\r");

@@ -34,9 +34,24 @@ el1_entry:
   sub x1, x1, x0
   bl memzero
 
-  mov sp, #LOW_MEMORY
-  bl kernel_main
-  b proc_hang
+  bl __create_page_tables
+
+  mov x0, #VA_START
+  add sp, x0, #LOW_MEMORY
+
+  adrp x0, pg_dir
+  msr tcr_el1, x0
+
+  ldr x0, =(MAIR_VALUE)
+  msr mair_el1, x0
+
+  ldr x2, =kernel_main
+
+  mov x0, #SCRTR_MMY_ENABLED
+  msr sctlr_el1, x0
+
+  br x2
+
 
 .macro create_pdg_entry tbt, virt, tmp1, tmp2
 create_table_entry \tbl, \virt, PGD_SHIFT, \tmp1, tmp2
